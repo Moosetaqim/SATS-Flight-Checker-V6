@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Schedule Search</title>
+    <title>Flight Schedule Search - SATS Ltd</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -46,6 +46,42 @@
             font-size: 1.1rem;
             opacity: 0.7;
             color: #374151;
+        }
+        
+        .download-notice {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px;
+            text-align: center;
+        }
+        
+        .download-notice h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .download-notice p {
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        
+        .download-btn {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .download-btn:active {
+            background: #2563eb;
         }
         
         .search-section {
@@ -124,9 +160,8 @@
             transition: all 0.3s ease;
         }
         
-        .clear-btn:hover {
+        .clear-btn:active {
             background: #dc2626;
-            transform: translateY(-1px);
         }
         
         .flight-card {
@@ -136,12 +171,6 @@
             padding: 25px;
             margin-bottom: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .flight-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
         
         .flight-card.timer-active {
@@ -182,27 +211,14 @@
             margin-top: 4px;
         }
         
-        .flight-badges {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        
-        .badge-primary {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-        
         .badge-secondary {
             background: #f1f5f9;
             color: #475569;
             border: 1px solid #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
         
         .flight-details {
@@ -230,6 +246,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .timer-display {
@@ -249,7 +267,6 @@
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
         
         .start-timer-btn {
@@ -257,7 +274,7 @@
             color: white;
         }
         
-        .start-timer-btn:hover {
+        .start-timer-btn:active {
             background: #059669;
         }
         
@@ -266,28 +283,8 @@
             color: white;
         }
         
-        .stop-timer-btn:hover {
+        .stop-timer-btn:active {
             background: #dc2626;
-        }
-        
-        .start-timer-btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-        
-        .additional-details {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #f1f5f9;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-        
-        .additional-details strong {
-            color: #374151;
         }
         
         .no-results {
@@ -303,16 +300,6 @@
             opacity: 0.5;
         }
         
-        .audio-notice {
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.875rem;
-            color: #92400e;
-        }
-        
         @media (max-width: 768px) {
             .search-controls {
                 grid-template-columns: 1fr;
@@ -320,16 +307,6 @@
             
             .header h1 {
                 font-size: 2rem;
-            }
-            
-            .results-header {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .timer-section {
-                flex-direction: column;
-                gap: 10px;
             }
         }
     </style>
@@ -341,6 +318,12 @@
             <p>Search through flight schedules by flight number, name, or airline</p>
         </div>
         
+        <div class="download-notice">
+            <h3>📱 For Full Mobile Support</h3>
+            <p>If audio alerts aren't working in this preview, download this page and open it directly in your phone's browser.</p>
+            <button class="download-btn" onclick="downloadHTML()">⬇️ Download for Mobile</button>
+        </div>
+        
         <div class="search-section">
             <div class="file-upload">
                 <label for="fileInput" style="font-weight: 600; margin-bottom: 8px; display: block;">Upload Excel File:</label>
@@ -350,7 +333,7 @@
             <div class="search-controls">
                 <div class="search-group">
                     <label for="searchQuery">Flight Number or Airline Name:</label>
-                    <input type="text" id="searchQuery" placeholder="Enter flight number (e.g., 3U3909) or airline (e.g., Sichuan Airlines)...">
+                    <input type="text" id="searchQuery" placeholder="Enter flight number (e.g., 3U3909) or airline...">
                 </div>
                 <div class="search-group">
                     <label for="daySearch">Day Search:</label>
@@ -382,33 +365,36 @@
         let warningOscillator = null;
         let warningGain = null;
         let vibrateInterval = null;
-        let audioInitialized = false;
         
-        // Initialize Web Audio API (better mobile support)
-        function initializeAudioContext() {
-            if (audioInitialized) return true;
-            
+        function downloadHTML() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sats-flight-checker.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function initAudio() {
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!audioContext) {
                     audioContext = new AudioContext();
                 }
-                
-                // Resume audio context if suspended (common on mobile)
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-                
-                audioInitialized = true;
-                console.log('Audio context initialized');
                 return true;
             } catch (e) {
-                console.log('Audio context not supported:', e);
+                console.error('Audio init failed:', e);
                 return false;
             }
         }
         
-        // File upload handler
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -432,11 +418,10 @@
             reader.readAsArrayBuffer(file);
         });
         
-        // Process flight data from Excel
         function processFlightData(data) {
             const processedData = [];
-            
             let headerRowIndex = -1;
+            
             for (let i = 0; i < data.length; i++) {
                 if (data[i][0] === 'No' || data[i][3] === 'No') {
                     headerRowIndex = i;
@@ -467,26 +452,19 @@
             return processedData;
         }
         
-        // Search functionality
         document.getElementById('searchQuery').addEventListener('input', debounce(displayResults, 300));
         document.getElementById('daySearch').addEventListener('input', debounce(displayResults, 300));
         
         function debounce(func, wait) {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+            return function(...args) {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
         
         function displayResults() {
-            if (activeTimer !== null) {
-                return;
-            }
+            if (activeTimer !== null) return;
             
             const searchQuery = document.getElementById('searchQuery').value.toLowerCase();
             const daySearch = document.getElementById('daySearch').value.toLowerCase();
@@ -499,19 +477,12 @@
                     (flight['Airline'] && String(flight['Airline']).toLowerCase().includes(searchQuery));
                 
                 const dayMatch = !daySearch || 
-                    (flight['Day'] && 
-                     String(flight['Day']).toLowerCase().includes(daySearch)) ||
-                    (flight['Frequency'] && 
-                     String(flight['Frequency']).toLowerCase().includes(daySearch)) ||
+                    (flight['Day'] && String(flight['Day']).toLowerCase().includes(daySearch)) ||
+                    (flight['Frequency'] && String(flight['Frequency']).toLowerCase().includes(daySearch)) ||
                     Object.values(flight).some(value => 
                         String(value).toLowerCase().includes(daySearch) &&
-                        (String(value).toLowerCase().includes('monday') ||
-                         String(value).toLowerCase().includes('tuesday') ||
-                         String(value).toLowerCase().includes('wednesday') ||
-                         String(value).toLowerCase().includes('thursday') ||
-                         String(value).toLowerCase().includes('friday') ||
-                         String(value).toLowerCase().includes('saturday') ||
-                         String(value).toLowerCase().includes('sunday'))
+                        ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                            .some(day => String(value).toLowerCase().includes(day))
                     );
                 
                 return searchMatch && dayMatch;
@@ -549,8 +520,6 @@
             const primaryFlightNumber = arrFlt || depFlt || 'N/A';
             const correspondingFlightNumber = arrFlt && depFlt ? (arrFlt ? depFlt : arrFlt) : '';
             
-            const hasVibration = 'vibrate' in navigator;
-            
             return `
                 <div class="flight-card" id="flight-${index}">
                     <div class="flight-header">
@@ -558,9 +527,7 @@
                             <div class="flight-number">${primaryFlightNumber}</div>
                             <div class="airline-name">${airlineCode}${airlineName ? ' - ' + airlineName : ''}</div>
                         </div>
-                        <div class="flight-badges">
-                            ${correspondingFlightNumber ? `<span class="badge badge-secondary">Corresponding: ${correspondingFlightNumber}</span>` : ''}
-                        </div>
+                        ${correspondingFlightNumber ? `<span class="badge-secondary">Corresponding: ${correspondingFlightNumber}</span>` : ''}
                     </div>
                     <div class="flight-details">
                         ${sta ? `<div class="detail-item"><strong>STA:</strong> ${sta}</div>` : ''}
@@ -573,7 +540,6 @@
                             <button class="timer-btn start-timer-btn" id="start-btn-${index}" onclick="startTimer(${index}, ${precisionTime})">Start ${precisionTime} Min Timer</button>
                             <button class="timer-btn stop-timer-btn" id="stop-btn-${index}" onclick="stopTimer(${index})" style="display: none;">Stop Timer</button>
                         </div>
-                        ${hasVibration ? '<div class="audio-notice">📳 Phone will vibrate when timer warning starts</div>' : ''}
                     ` : ''}
                 </div>
             `;
@@ -581,13 +547,11 @@
         
         function startTimer(flightIndex, minutes) {
             if (activeTimer !== null) {
-                alert('A timer is already running! Please stop the current timer before starting a new one.');
+                alert('A timer is already running!');
                 return;
             }
             
-            // Initialize audio on user interaction
-            initializeAudioContext();
-            
+            initAudio();
             activeTimer = flightIndex;
             const warningTime = 2 * 60;
             const endTime = Date.now() + (minutes * 60 * 1000);
@@ -597,25 +561,19 @@
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            const allCards = document.querySelectorAll('.flight-card');
-            allCards.forEach((c, idx) => {
-                if (idx !== flightIndex) {
-                    c.style.display = 'none';
-                }
+            document.querySelectorAll('.flight-card').forEach((c, idx) => {
+                c.style.display = idx === flightIndex ? 'block' : 'none';
             });
             
             card.classList.add('timer-active');
             startBtn.style.display = 'none';
             stopBtn.style.display = 'block';
-            
             card.dataset.endTime = endTime;
             card.dataset.warningTriggered = 'false';
             
             const interval = setInterval(() => {
-                const now = Date.now();
-                const remainingMs = endTime - now;
+                const remainingMs = endTime - Date.now();
                 const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
-                
                 const mins = Math.floor(totalSeconds / 60);
                 const secs = totalSeconds % 60;
                 timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')} remaining`;
@@ -624,17 +582,17 @@
                     card.classList.add('timer-warning');
                     timerDisplay.classList.add('warning');
                     card.dataset.warningTriggered = 'true';
-                    playWarningSound();
-                    startVibration();
+                    playWarning();
+                    startVibrate();
                 }
                 
                 if (remainingMs <= 0) {
                     clearInterval(interval);
-                    stopWarningSound();
-                    stopVibration();
-                    playFinalSound();
+                    stopWarning();
+                    stopVibrate();
+                    playFinal();
                     vibrateFinal();
-                    alert('⚠️ TIME UP! The timer has ended.');
+                    alert('⚠️ TIME UP!');
                     resetTimer(flightIndex);
                 }
             }, 100);
@@ -644,14 +602,9 @@
         
         function stopTimer(flightIndex) {
             const card = document.getElementById(`flight-${flightIndex}`);
-            const interval = card.dataset.intervalId;
-            
-            if (interval) {
-                clearInterval(interval);
-            }
-            
-            stopWarningSound();
-            stopVibration();
+            clearInterval(card.dataset.intervalId);
+            stopWarning();
+            stopVibrate();
             resetTimer(flightIndex);
         }
         
@@ -661,64 +614,36 @@
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            const allCards = document.querySelectorAll('.flight-card');
-            allCards.forEach(c => {
-                c.style.display = 'block';
-            });
-            
+            document.querySelectorAll('.flight-card').forEach(c => c.style.display = 'block');
             card.classList.remove('timer-active', 'timer-warning');
             timerDisplay.classList.remove('warning');
             timerDisplay.textContent = 'Ready to start';
             startBtn.style.display = 'block';
             stopBtn.style.display = 'none';
-            
             activeTimer = null;
         }
         
-        function playWarningSound() {
-            if (!audioContext || audioContext.state === 'suspended') {
-                audioContext?.resume();
-            }
-            
+        function playWarning() {
             try {
-                // Stop any existing warning sound
-                stopWarningSound();
-                
-                // Create oscillator for beeping sound
+                stopWarning();
                 warningOscillator = audioContext.createOscillator();
                 warningGain = audioContext.createGain();
-                
                 warningOscillator.connect(warningGain);
                 warningGain.connect(audioContext.destination);
-                
-                warningOscillator.type = 'sine';
-                warningOscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                
-                warningGain.gain.setValueAtTime(0.3, audioContext.currentTime);
-                
-                // Create beeping pattern
+                warningOscillator.frequency.value = 800;
                 let time = audioContext.currentTime;
-                const beepDuration = 0.2;
-                const pauseDuration = 0.3;
-                
-                function scheduleBeeps() {
-                    for (let i = 0; i < 50; i++) {
-                        warningGain.gain.setValueAtTime(0.3, time);
-                        warningGain.gain.setValueAtTime(0, time + beepDuration);
-                        time += beepDuration + pauseDuration;
-                    }
+                for (let i = 0; i < 100; i++) {
+                    warningGain.gain.setValueAtTime(0.3, time);
+                    warningGain.gain.setValueAtTime(0, time + 0.2);
+                    time += 0.5;
                 }
-                
-                scheduleBeeps();
                 warningOscillator.start();
-                
-                console.log('Warning sound started');
             } catch (e) {
-                console.log('Error playing warning sound:', e);
+                console.error('Warning sound error:', e);
             }
         }
         
-        function stopWarningSound() {
+        function stopWarning() {
             try {
                 if (warningOscillator) {
                     warningOscillator.stop();
@@ -729,82 +654,44 @@
                     warningGain.disconnect();
                     warningGain = null;
                 }
-            } catch (e) {
-                console.log('Error stopping warning sound:', e);
-            }
+            } catch (e) {}
         }
         
-        function playFinalSound() {
-            if (!audioContext || audioContext.state === 'suspended') {
-                audioContext?.resume();
-            }
-            
+        function playFinal() {
             try {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.type = 'triangle';
-                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-                
-                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
-                
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 1.5);
-                
-                console.log('Final sound played');
-            } catch (e) {
-                console.log('Error playing final sound:', e);
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.frequency.value = 1000;
+                gain.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+                osc.start();
+                osc.stop(audioContext.currentTime + 1.5);
+            } catch (e) {}
+        }
+        
+        function startVibrate() {
+            if ('vibrate' in navigator) {
+                vibrateInterval = setInterval(() => navigator.vibrate([200, 100, 200]), 1000);
             }
         }
         
-        function startVibration() {
-            if ('vibrate' in navigator) {
-                vibrateInterval = setInterval(() => {
-                    navigator.vibrate([200, 100, 200]);
-                }, 1000);
-                console.log('Vibration started');
-            }
-        }
-        
-        function stopVibration() {
-            if (vibrateInterval) {
-                clearInterval(vibrateInterval);
-                vibrateInterval = null;
-            }
-            if ('vibrate' in navigator) {
-                navigator.vibrate(0);
-            }
+        function stopVibrate() {
+            clearInterval(vibrateInterval);
+            if ('vibrate' in navigator) navigator.vibrate(0);
         }
         
         function vibrateFinal() {
-            if ('vibrate' in navigator) {
-                navigator.vibrate([500, 200, 500, 200, 500]);
-                console.log('Final vibration');
-            }
+            if ('vibrate' in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
         }
-        
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                console.log('Page hidden - timer continues in background');
-            } else {
-                console.log('Page visible - timer syncing');
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-            }
-        });
         
         function updateResultsTitle(count = flightData.length) {
             document.getElementById('resultsTitle').textContent = `Flight Results (${count})`;
         }
         
         function toggleClearButton(show) {
-            const clearBtn = document.getElementById('clearBtn');
-            clearBtn.style.display = show ? 'block' : 'none';
+            document.getElementById('clearBtn').style.display = show ? 'block' : 'none';
         }
         
         function clearFilters() {
@@ -817,3 +704,4 @@
     </script>
 </body>
 </html>
+
