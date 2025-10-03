@@ -592,7 +592,7 @@
                     stopVibrate();
                     playFinal();
                     vibrateFinal();
-                    alert('GET OUT! 6767676767');
+                    alert('⚠️ TIME UP!');
                     resetTimer(flightIndex);
                 }
             }, 100);
@@ -632,7 +632,8 @@
                 warningGain.connect(audioContext.destination);
                 warningOscillator.frequency.value = 800;
                 let time = audioContext.currentTime;
-                for (let i = 0; i < 100; i++) {
+                // Create beeping pattern for 2 minutes (240 beeps = 2 minutes at 0.5s intervals)
+                for (let i = 0; i < 240; i++) {
                     warningGain.gain.setValueAtTime(0.3, time);
                     warningGain.gain.setValueAtTime(0, time + 0.2);
                     time += 0.5;
@@ -683,7 +684,10 @@
         }
         
         function vibrateFinal() {
-            if ('vibrate' in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
+            if ('vibrate' in navigator) {
+                // Strong vibration pattern when timer ends - repeats 5 times
+                navigator.vibrate([500, 200, 500, 200, 500, 200, 500, 200, 500]);
+            }
         }
         
         function updateResultsTitle(count = flightData.length) {
@@ -704,5 +708,4 @@
     </script>
 </body>
 </html>
-
 
