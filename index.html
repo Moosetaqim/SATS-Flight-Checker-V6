@@ -365,6 +365,7 @@
         let warningOscillator = null;
         let warningGain = null;
         let vibrateInterval = null;
+        let beepInterval = null;
         
         function downloadHTML() {
             const htmlContent = document.documentElement.outerHTML;
@@ -592,7 +593,7 @@
                     stopVibrate();
                     playFinal();
                     vibrateFinal();
-                    alert('GET OUT!!! 676767676767');
+                    alert('⚠️ TIME UP!');
                     resetTimer(flightIndex);
                 }
             }, 100);
@@ -626,19 +627,26 @@
         function playWarning() {
             try {
                 stopWarning();
-                warningOscillator = audioContext.createOscillator();
-                warningGain = audioContext.createGain();
-                warningOscillator.connect(warningGain);
-                warningGain.connect(audioContext.destination);
-                warningOscillator.frequency.value = 800;
-                let time = audioContext.currentTime;
-                // Create beeping pattern for 2 minutes (240 beeps = 2 minutes at 0.5s intervals)
-                for (let i = 0; i < 240; i++) {
-                    warningGain.gain.setValueAtTime(0.3, time);
-                    warningGain.gain.setValueAtTime(0, time + 0.2);
-                    time += 0.5;
-                }
-                warningOscillator.start();
+                
+                // Play a beep sound every 500ms using setInterval
+                beepInterval = setInterval(() => {
+                    try {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        
+                        osc.frequency.value = 800;
+                        gain.gain.value = 0.3;
+                        
+                        osc.start();
+                        osc.stop(audioContext.currentTime + 0.2); // 200ms beep
+                    } catch (e) {
+                        console.error('Beep error:', e);
+                    }
+                }, 500); // Beep every 500ms
+                
             } catch (e) {
                 console.error('Warning sound error:', e);
             }
@@ -646,6 +654,13 @@
         
         function stopWarning() {
             try {
+                // Stop the beep interval
+                if (beepInterval) {
+                    clearInterval(beepInterval);
+                    beepInterval = null;
+                }
+                
+                // Clean up any old oscillators
                 if (warningOscillator) {
                     warningOscillator.stop();
                     warningOscillator.disconnect();
@@ -708,5 +723,3 @@
     </script>
 </body>
 </html>
-
-
