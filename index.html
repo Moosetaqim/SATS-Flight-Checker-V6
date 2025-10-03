@@ -303,6 +303,16 @@
             opacity: 0.5;
         }
         
+        .audio-notice {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.875rem;
+            color: #92400e;
+        }
+        
         @media (max-width: 768px) {
             .search-controls {
                 grid-template-columns: 1fr;
@@ -368,8 +378,35 @@
     <script>
         let flightData = [];
         let activeTimer = null;
-        let warningAudio = null;
-        let finalAudio = null;
+        let audioContext = null;
+        let warningOscillator = null;
+        let warningGain = null;
+        let vibrateInterval = null;
+        let audioInitialized = false;
+        
+        // Initialize Web Audio API (better mobile support)
+        function initializeAudioContext() {
+            if (audioInitialized) return true;
+            
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!audioContext) {
+                    audioContext = new AudioContext();
+                }
+                
+                // Resume audio context if suspended (common on mobile)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                audioInitialized = true;
+                console.log('Audio context initialized');
+                return true;
+            } catch (e) {
+                console.log('Audio context not supported:', e);
+                return false;
+            }
+        }
         
         // File upload handler
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -447,7 +484,6 @@
         }
         
         function displayResults() {
-            // If a timer is active, don't refresh the display
             if (activeTimer !== null) {
                 return;
             }
@@ -510,9 +546,10 @@
             const day = flight['Day'] || '';
             const precisionTime = flight['Precision Time'] || 0;
             
-            // Determine primary flight number for header (prefer arrival, then departure)
             const primaryFlightNumber = arrFlt || depFlt || 'N/A';
             const correspondingFlightNumber = arrFlt && depFlt ? (arrFlt ? depFlt : arrFlt) : '';
+            
+            const hasVibration = 'vibrate' in navigator;
             
             return `
                 <div class="flight-card" id="flight-${index}">
@@ -536,6 +573,7 @@
                             <button class="timer-btn start-timer-btn" id="start-btn-${index}" onclick="startTimer(${index}, ${precisionTime})">Start ${precisionTime} Min Timer</button>
                             <button class="timer-btn stop-timer-btn" id="stop-btn-${index}" onclick="stopTimer(${index})" style="display: none;">Stop Timer</button>
                         </div>
+                        ${hasVibration ? '<div class="audio-notice">📳 Phone will vibrate when timer warning starts</div>' : ''}
                     ` : ''}
                 </div>
             `;
@@ -547,8 +585,11 @@
                 return;
             }
             
+            // Initialize audio on user interaction
+            initializeAudioContext();
+            
             activeTimer = flightIndex;
-            const warningTime = 2 * 60; // 2 minutes in seconds
+            const warningTime = 2 * 60;
             const endTime = Date.now() + (minutes * 60 * 1000);
             
             const card = document.getElementById(`flight-${flightIndex}`);
@@ -556,7 +597,6 @@
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            // Hide all other flight cards
             const allCards = document.querySelectorAll('.flight-card');
             allCards.forEach((c, idx) => {
                 if (idx !== flightIndex) {
@@ -568,7 +608,6 @@
             startBtn.style.display = 'none';
             stopBtn.style.display = 'block';
             
-            // Store timer data
             card.dataset.endTime = endTime;
             card.dataset.warningTriggered = 'false';
             
@@ -581,23 +620,24 @@
                 const secs = totalSeconds % 60;
                 timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')} remaining`;
                 
-                // Check for warning (2 minutes remaining)
                 if (totalSeconds <= warningTime && card.dataset.warningTriggered === 'false') {
                     card.classList.add('timer-warning');
                     timerDisplay.classList.add('warning');
                     card.dataset.warningTriggered = 'true';
                     playWarningSound();
+                    startVibration();
                 }
                 
-                // Check if time is up
                 if (remainingMs <= 0) {
                     clearInterval(interval);
                     stopWarningSound();
+                    stopVibration();
                     playFinalSound();
+                    vibrateFinal();
                     alert('⚠️ TIME UP! The timer has ended.');
                     resetTimer(flightIndex);
                 }
-            }, 100); // Check every 100ms for better accuracy
+            }, 100);
             
             card.dataset.intervalId = interval;
         }
@@ -611,7 +651,7 @@
             }
             
             stopWarningSound();
-            stopFinalSound();
+            stopVibration();
             resetTimer(flightIndex);
         }
         
@@ -621,7 +661,6 @@
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            // Show all flight cards again
             const allCards = document.querySelectorAll('.flight-card');
             allCards.forEach(c => {
                 c.style.display = 'block';
@@ -637,96 +676,125 @@
         }
         
         function playWarningSound() {
+            if (!audioContext || audioContext.state === 'suspended') {
+                audioContext?.resume();
+            }
+            
             try {
-                // Stop any existing warning sound first
+                // Stop any existing warning sound
                 stopWarningSound();
                 
-                warningAudio = new Audio('https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/bell_ring.mp3');
-                warningAudio.loop = true;
-                warningAudio.volume = 0.7;
+                // Create oscillator for beeping sound
+                warningOscillator = audioContext.createOscillator();
+                warningGain = audioContext.createGain();
                 
-                // Pre-load the audio
-                warningAudio.load();
+                warningOscillator.connect(warningGain);
+                warningGain.connect(audioContext.destination);
                 
-                const playPromise = warningAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('Warning sound playing');
-                    }).catch(e => {
-                        console.log('Audio play prevented:', e);
-                        // Retry with user interaction context
-                        document.addEventListener('click', function playOnClick() {
-                            warningAudio.play().catch(() => {});
-                            document.removeEventListener('click', playOnClick);
-                        }, { once: true });
-                    });
+                warningOscillator.type = 'sine';
+                warningOscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                
+                warningGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                
+                // Create beeping pattern
+                let time = audioContext.currentTime;
+                const beepDuration = 0.2;
+                const pauseDuration = 0.3;
+                
+                function scheduleBeeps() {
+                    for (let i = 0; i < 50; i++) {
+                        warningGain.gain.setValueAtTime(0.3, time);
+                        warningGain.gain.setValueAtTime(0, time + beepDuration);
+                        time += beepDuration + pauseDuration;
+                    }
                 }
+                
+                scheduleBeeps();
+                warningOscillator.start();
+                
+                console.log('Warning sound started');
             } catch (e) {
-                console.log('Error creating audio:', e);
+                console.log('Error playing warning sound:', e);
             }
         }
         
         function stopWarningSound() {
-            if (warningAudio) {
-                try {
-                    warningAudio.pause();
-                    warningAudio.currentTime = 0;
-                    warningAudio.loop = false;
-                } catch (e) {
-                    console.log('Error stopping warning sound:', e);
+            try {
+                if (warningOscillator) {
+                    warningOscillator.stop();
+                    warningOscillator.disconnect();
+                    warningOscillator = null;
                 }
-                warningAudio = null;
+                if (warningGain) {
+                    warningGain.disconnect();
+                    warningGain = null;
+                }
+            } catch (e) {
+                console.log('Error stopping warning sound:', e);
             }
         }
         
         function playFinalSound() {
+            if (!audioContext || audioContext.state === 'suspended') {
+                audioContext?.resume();
+            }
+            
             try {
-                // Stop any existing final sound first
-                stopFinalSound();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
                 
-                finalAudio = new Audio('https://cdnjs.cloudflare.com/ajax/libs/ion-sound/3.0.7/sounds/metal_plate.mp3');
-                finalAudio.volume = 1.0;
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
                 
-                // Pre-load the audio
-                finalAudio.load();
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
                 
-                const playPromise = finalAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('Final sound playing');
-                    }).catch(e => {
-                        console.log('Audio play prevented:', e);
-                        // Retry with user interaction context
-                        document.addEventListener('click', function playOnClick() {
-                            finalAudio.play().catch(() => {});
-                            document.removeEventListener('click', playOnClick);
-                        }, { once: true });
-                    });
-                }
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.5);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 1.5);
+                
+                console.log('Final sound played');
             } catch (e) {
-                console.log('Error creating audio:', e);
+                console.log('Error playing final sound:', e);
             }
         }
         
-        function stopFinalSound() {
-            if (finalAudio) {
-                try {
-                    finalAudio.pause();
-                    finalAudio.currentTime = 0;
-                } catch (e) {
-                    console.log('Error stopping final sound:', e);
-                }
-                finalAudio = null;
+        function startVibration() {
+            if ('vibrate' in navigator) {
+                vibrateInterval = setInterval(() => {
+                    navigator.vibrate([200, 100, 200]);
+                }, 1000);
+                console.log('Vibration started');
             }
         }
         
-        // Handle page visibility changes to ensure timer keeps running
+        function stopVibration() {
+            if (vibrateInterval) {
+                clearInterval(vibrateInterval);
+                vibrateInterval = null;
+            }
+            if ('vibrate' in navigator) {
+                navigator.vibrate(0);
+            }
+        }
+        
+        function vibrateFinal() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate([500, 200, 500, 200, 500]);
+                console.log('Final vibration');
+            }
+        }
+        
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
                 console.log('Page hidden - timer continues in background');
             } else {
                 console.log('Page visible - timer syncing');
-                // Timer will automatically sync because we're using Date.now()
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
             }
         });
         
