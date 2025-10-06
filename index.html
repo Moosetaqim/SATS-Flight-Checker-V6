@@ -465,7 +465,8 @@
             {"No":148,"FSC/LCC":"FSC","Airline":"QF","Airline Name":"Qantas","Arr Flt":"QF53","STA":"2135","Dep Flt":"QF54","STD":"2310","Route":"BNE-SIN-BNE","Frequency":"6,7","Day":"Saturday, Sunday","AC Type":"A330","Classification":"WB(S)","Handler":"SATS","Required Number of Teams":2,"Precision Time":25,"Band":"2100"},
             {"No":149,"FSC/LCC":"FSC","Airline":"QF","Airline Name":"Qantas","Arr Flt":"QF2","STA":"1725","Dep Flt":"QF2","STD":"1930","Route":"LHR-SIN-SYD","Frequency":"1,2,3,4,5,6,7","Day":"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday","AC Type":"A380","Classification":"WB(L)","Handler":"SATS","Required Number of Teams":3,"Precision Time":25,"Band":"1700"},
             {"No":150,"FSC/LCC":"FSC","Airline":"QF","Airline Name":"Qantas","Arr Flt":"QF1","STA":"2115","Dep Flt":"QF1","STD":"2325","Route":"SYD-SIN-LHR","Frequency":"1,2,3,4,5,6,7","Day":"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday","AC Type":"A380","Classification":"WB(L)","Handler":"SATS","Required Number of Teams":3,"Precision Time":25,"Band":"2100"},
-            {"No":151,"FSC/LCC":"FSC","Airline":"QF","Airline Name":"Qantas","Arr Flt":"QF113","STA":"1815","Dep Flt":"QF114","STD":"1920","Route":"DRW-SIN-DRW","Frequency":"1,3,5,6","Day":"Monday, Wednesday, Friday, Saturday","AC Type":"B738","Classification":"NB","Handler":"SATS","Required Number of Teams":1,"Precision Time":15,"Band":"1800"}
+            {"No":151,"FSC/LCC":"FSC","Airline":"QF","Airline Name":"Qantas","Arr Flt":"QF113","STA":"1815","Dep Flt":"QF114","STD":"1920","Route":"DRW-SIN-DRW","Frequency":"1,3,5,6","Day":"Monday, Wednesday, Friday, Saturday","AC Type":"B738","Classification":"NB","Handler":"SATS","Required Number of Teams":1,"Precision Time":15,"Band":"1800"},
+            {"No":"TEST","FSC/LCC":"TEST","Airline":"TEST","Airline Name":"TEST","Arr Flt":"TEST","STA":"TEST","Dep Flt":"TEST","STD":"TEST","Route":"TEST","Frequency":"TEST","Day":"TEST","AC Type":"TEST","Classification":"TEST","Handler":"TEST","Required Number of Teams":3,"Precision Time":3,"Band":"TEST"}
         ];
         
         function initDB() {
@@ -493,9 +494,14 @@
                 const transaction = db.transaction(['flights'], 'readwrite');
                 const objectStore = transaction.objectStore('flights');
                 
-                FLIGHT_DATA.forEach(flight => {
-                    objectStore.put(flight);
-                });
+                // Clear existing data first to prevent duplicates
+                const clearRequest = objectStore.clear();
+                
+                clearRequest.onsuccess = () => {
+                    FLIGHT_DATA.forEach(flight => {
+                        objectStore.add(flight);
+                    });
+                };
                 
                 transaction.oncomplete = () => resolve();
                 transaction.onerror = () => reject(transaction.error);
@@ -678,7 +684,7 @@
                     stopVibrate();
                     playFinal();
                     vibrateFinal();
-                    alert('Times up brochacho');
+                    alert('TIME UP!');
                     resetTimer(flightIndex);
                 }
             }, 100);
@@ -792,5 +798,3 @@
     </script>
 </body>
 </html>
-
-
