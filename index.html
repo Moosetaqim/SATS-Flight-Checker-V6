@@ -23,7 +23,6 @@
             margin: 0 auto;
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
         
@@ -32,7 +31,6 @@
             color: #dc2626;
             padding: 40px 20px;
             text-align: center;
-            border-bottom: 3px solid #dc2626;
         }
         
         .header h1 {
@@ -43,27 +41,12 @@
         
         .header p {
             font-size: 1.1rem;
-            opacity: 0.7;
             color: #374151;
         }
         
-        .db-status {
-            background: #dbeafe;
-            border: 2px solid #3b82f6;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px;
-            text-align: center;
-        }
-        
-        .db-status.loaded {
-            background: #dcfce7;
-            border-color: #10b981;
-        }
-        
+
         .search-section {
             padding: 30px;
-            background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
         }
         
@@ -90,7 +73,6 @@
             border: 2px solid #e2e8f0;
             border-radius: 10px;
             font-size: 1rem;
-            transition: all 0.3s ease;
         }
         
         .search-group input:focus {
@@ -122,10 +104,9 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
         
-        .clear-btn:active {
+        .clear-btn:hover {
             background: #dc2626;
         }
         
@@ -135,7 +116,6 @@
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
         
         .flight-card.timer-active {
@@ -146,12 +126,6 @@
         .flight-card.timer-warning {
             border: 2px solid #ef4444;
             background: #fef2f2;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
         }
         
         .flight-header {
@@ -206,7 +180,6 @@
         .timer-section {
             margin-top: 20px;
             padding: 15px;
-            background: #f8fafc;
             border-radius: 10px;
             display: flex;
             justify-content: space-between;
@@ -239,7 +212,7 @@
             color: white;
         }
         
-        .start-timer-btn:active {
+        .start-timer-btn:hover {
             background: #059669;
         }
         
@@ -248,7 +221,7 @@
             color: white;
         }
         
-        .stop-timer-btn:active {
+        .stop-timer-btn:hover {
             background: #dc2626;
         }
         
@@ -276,15 +249,11 @@
             <p>Search through flight schedules by flight number, name, or airline</p>
         </div>
         
-        <div class="db-status" id="dbStatus">
-            <p>Loading flight database...</p>
-        </div>
-        
         <div class="search-section">
             <div class="search-controls">
                 <div class="search-group">
                     <label for="searchQuery">Flight Number or Airline Name:</label>
-                    <input type="text" id="searchQuery" placeholder="Enter flight number (e.g., 3U3909) or airline...">
+                    <input type="text" id="searchQuery" placeholder="Enter flight number (e.g., TEST123) or airline...">
                 </div>
                 <div class="search-group">
                     <label for="daySearch">Day Search:</label>
@@ -313,9 +282,8 @@
         let audioContext = null;
         let warningOscillator = null;
         let warningGain = null;
-        let vibrateInterval = null;
         
-        const FLIGHT_DATA = [
+     const FLIGHT_DATA = [
             {"No":1,"FSC/LCC":"FSC","Airline":"3U","Airline Name":"Sichuan Airlines","Arr Flt":"3U3909","STA":"1535","Dep Flt":"3U3910","STD":"1700","Route":"TFU-SIN-TFU","Frequency":"1,2,3,4,5,6,7","Day":"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday","AC Type":"A321","Classification":"NB","Handler":"Aventa","Required Number of Teams":1,"Precision Time":15,"Band":"1500"},
             {"No":2,"FSC/LCC":"FSC","Airline":"3U","Airline Name":"Sichuan Airlines","Arr Flt":"3U3919","STA":"0240","Dep Flt":"3U3920","STD":"0340","Route":"TFU-SIN-TFU","Frequency":"1,2,3,4,5,6,7","Day":"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday","AC Type":"A321","Classification":"NB","Handler":"Aventa","Required Number of Teams":1,"Precision Time":15,"Band":"0200","Remarks":"ADDITIONAL FLT"},
             {"No":3,"FSC/LCC":"LCC","Airline":"8B","Airline Name":"TransNusa","Arr Flt":"8B151","STA":"1045","Dep Flt":"8B152","STD":"1145","Route":"CKG-SIN-CKG","Frequency":"1,2,3,4,5,6,7","Day":"Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday","AC Type":"A320","Classification":"NB","Handler":"Aventa","Required Number of Teams":0,"Precision Time":15,"Band":"1000"},
@@ -469,6 +437,7 @@
             {"No":152,"FSC/LCC":"TEST","Airline":"TEST","Airline Name":"TEST","Arr Flt":"TEST","STA":"TEST","Dep Flt":"TEST","STD":"TEST","Route":"TEST","Frequency":"TEST","Day":"TEST","AC Type":"TEST","Classification":"TEST","Handler":"TEST","Required Number of Teams":3,"Precision Time":3,"Band":"TEST"}
         ];
         
+        
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open('SATSFlightDB', 1);
@@ -494,7 +463,6 @@
                 const transaction = db.transaction(['flights'], 'readwrite');
                 const objectStore = transaction.objectStore('flights');
                 
-                // Clear existing data first to prevent duplicates
                 const clearRequest = objectStore.clear();
                 
                 clearRequest.onsuccess = () => {
@@ -525,14 +493,10 @@
                 await populateDB();
                 flightData = await loadFlights();
                 
-                document.getElementById('dbStatus').innerHTML = '<p>Database loaded successfully! ' + flightData.length + ' flights available</p>';
-                document.getElementById('dbStatus').classList.add('loaded');
-                
                 displayResults();
                 updateResultsTitle();
             } catch (error) {
                 console.error('Database error:', error);
-                document.getElementById('dbStatus').innerHTML = '<p>Error loading database. Using sample data.</p>';
                 flightData = FLIGHT_DATA;
                 displayResults();
             }
@@ -675,15 +639,12 @@
                     timerDisplay.classList.add('warning');
                     card.dataset.warningTriggered = 'true';
                     playWarning();
-                    startVibrate();
                 }
                 
                 if (remainingMs <= 0) {
                     clearInterval(interval);
                     stopWarning();
-                    stopVibrate();
                     playFinal();
-                    vibrateFinal();
                     alert('TIME UP!');
                     resetTimer(flightIndex);
                 }
@@ -696,7 +657,6 @@
             const card = document.getElementById(`flight-${flightIndex}`);
             clearInterval(card.dataset.intervalId);
             stopWarning();
-            stopVibrate();
             resetTimer(flightIndex);
         }
         
@@ -763,23 +723,6 @@
             } catch (e) {}
         }
         
-        function startVibrate() {
-            if ('vibrate' in navigator) {
-                vibrateInterval = setInterval(() => navigator.vibrate([200, 100, 200]), 1000);
-            }
-        }
-        
-        function stopVibrate() {
-            clearInterval(vibrateInterval);
-            if ('vibrate' in navigator) navigator.vibrate(0);
-        }
-        
-        function vibrateFinal() {
-            if ('vibrate' in navigator) {
-                navigator.vibrate([500, 200, 500, 200, 500, 200, 500, 200, 500]);
-            }
-        }
-        
         function updateResultsTitle(count = flightData.length) {
             document.getElementById('resultsTitle').textContent = `Flight Results (${count})`;
         }
@@ -798,4 +741,3 @@
     </script>
 </body>
 </html>
-
