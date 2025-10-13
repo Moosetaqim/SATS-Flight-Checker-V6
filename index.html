@@ -44,7 +44,6 @@
             color: #374151;
         }
         
-
         .search-section {
             padding: 30px;
             border-bottom: 1px solid #e2e8f0;
@@ -110,71 +109,39 @@
             background: #dc2626;
         }
         
-        .flight-card {
+        .flight-item {
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
         }
         
-        .flight-card.timer-active {
+        .flight-item.timer-active {
             border: 2px solid #10b981;
             background: #f0fdf4;
         }
         
-        .flight-card.timer-warning {
+        .flight-item.timer-warning {
             border: 2px solid #ef4444;
             background: #fef2f2;
         }
         
-        .flight-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .flight-item ul {
+            list-style: disc;
+            margin-left: 20px;
             margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #f1f5f9;
         }
         
-        .flight-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2563eb;
-        }
-        
-        .airline-name {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-        
-        .badge-secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        
-        .flight-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .detail-item strong {
+        .flight-item li {
+            margin-bottom: 8px;
+            line-height: 1.6;
             color: #374151;
-            min-width: 60px;
+        }
+        
+        .flight-item li strong {
+            color: #1f2937;
+            font-weight: 700;
         }
         
         .timer-section {
@@ -269,7 +236,7 @@
             </div>
             <div id="results">
                 <div class="no-results">
-                    <p>Loading flight data...</p>
+                    <p>Enter a flight number, airline, or day to search.</p>
                 </div>
             </div>
         </div>
@@ -283,7 +250,7 @@
         let warningOscillator = null;
         let warningGain = null;
         
-      
+        
 const FLIGHT_DATA = [
 {"Airline": "3U", "Airline Name": "Sichuan Airlines", "Arr Flt": "3U3909", "STA": "1535", "Dep Flt": "3U3910", "STD": "1700", "Route": "TFU-SIN-TFU", "Frequency": "1,2,3,4,5,6,7", "Day": "Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday", "Required Number of Teams": 1, "Precision Time": 15},
 {"Airline": "3U", "Airline Name": "Sichuan Airlines", "Arr Flt": "3U3919", "STA": "0240", "Dep Flt": "3U3920", "STD": "0340", "Route": "TFU-SIN-TFU", "Frequency": "1,2,3,4,5,6,7", "Day": "Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday", "Required Number of Teams": 1, "Precision Time": 15},
@@ -438,6 +405,7 @@ const FLIGHT_DATA = [
 {"Airline": "TEST", "Airline Name": "TEST", "Arr Flt": "TEST", "STA": "TEST", "Dep Flt": "TEST", "STD": "TEST", "Route": "TEST", "Frequency": "TEST", "Day": "TEST", "Required Number of Teams": 3, "Precision Time": 3}
 ];
 
+        
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open('SATSFlightDB', 1);
@@ -493,12 +461,12 @@ const FLIGHT_DATA = [
                 await populateDB();
                 flightData = await loadFlights();
                 
-                displayResults();
-                updateResultsTitle();
+                // Don't display results on load, wait for user search
+                updateResultsTitle(0);
             } catch (error) {
                 console.error('Database error:', error);
                 flightData = FLIGHT_DATA;
-                displayResults();
+                updateResultsTitle(0);
             }
         }
         
@@ -535,6 +503,16 @@ const FLIGHT_DATA = [
             const searchQuery = document.getElementById('searchQuery').value.toLowerCase();
             const daySearch = document.getElementById('daySearch').value.toLowerCase();
             
+            const resultsContainer = document.getElementById('results');
+            
+            // If no search query, show prompt message
+            if (!searchQuery && !daySearch) {
+                resultsContainer.innerHTML = '<div class="no-results"><p>Enter a flight number, airline, or day to search.</p></div>';
+                updateResultsTitle(0);
+                toggleClearButton(false);
+                return;
+            }
+            
             const filtered = flightData.filter(flight => {
                 const searchMatch = !searchQuery || 
                     (flight['Arr Flt'] && String(flight['Arr Flt']).toLowerCase().includes(searchQuery)) ||
@@ -549,47 +527,44 @@ const FLIGHT_DATA = [
                 return searchMatch && dayMatch;
             });
             
-            const resultsContainer = document.getElementById('results');
-            
             if (filtered.length === 0) {
-                resultsContainer.innerHTML = '<div class="no-results"><p>No flights found matching your search criteria.</p></div>';
+                resultsContainer.innerHTML = '<div class="no-results"><p>Flight not available</p></div>';
             } else {
-                resultsContainer.innerHTML = filtered.map((flight, index) => createFlightCard(flight, index)).join('');
+                resultsContainer.innerHTML = filtered.map((flight, index) => createFlightItem(flight, index)).join('');
             }
             
             updateResultsTitle(filtered.length);
             toggleClearButton(searchQuery || daySearch);
         }
         
-        function createFlightCard(flight, index) {
-            const arrFlt = flight['Arr Flt'] || '';
-            const depFlt = flight['Dep Flt'] || '';
+        function createFlightItem(flight, index) {
             const airlineCode = flight['Airline'] || '';
             const airlineName = flight['Airline Name'] || '';
+            const arrFlt = flight['Arr Flt'] || '';
             const sta = flight['STA'] || '';
+            const depFlt = flight['Dep Flt'] || '';
             const std = flight['STD'] || '';
-            const day = flight['Day'] || '';
-            const precisionTime = flight['Precision Time'] || 0;
             const route = flight['Route'] || '';
-            
-            const primaryFlightNumber = arrFlt || depFlt || 'N/A';
-            const correspondingFlightNumber = arrFlt && depFlt ? (arrFlt ? depFlt : arrFlt) : '';
+            const frequency = flight['Frequency'] || '';
+            const day = flight['Day'] || '';
+            const requiredTeams = flight['Required Number of Teams'];
+            const precisionTime = flight['Precision Time'] || 0;
             
             return `
-                <div class="flight-card" id="flight-${index}">
-                    <div class="flight-header">
-                        <div>
-                            <div class="flight-number">${primaryFlightNumber}</div>
-                            <div class="airline-name">${airlineCode}${airlineName ? ' - ' + airlineName : ''}</div>
-                        </div>
-                        ${correspondingFlightNumber ? `<span class="badge-secondary">Corresponding: ${correspondingFlightNumber}</span>` : ''}
-                    </div>
-                    <div class="flight-details">
-                        ${sta ? `<div class="detail-item"><strong>STA:</strong> ${sta}</div>` : ''}
-                        ${std ? `<div class="detail-item"><strong>STD:</strong> ${std}</div>` : ''}
-                        ${day ? `<div class="detail-item"><strong>Days:</strong> ${day}</div>` : ''}
-                        ${route ? `<div class="detail-item"><strong>Route:</strong> ${route}</div>` : ''}
-                    </div>
+                <div class="flight-item" id="flight-${index}">
+                    <ul>
+                        ${airlineCode ? `<li><strong>Airline:</strong> ${airlineCode}</li>` : ''}
+                        ${airlineName ? `<li><strong>Airline Name:</strong> ${airlineName}</li>` : ''}
+                        ${arrFlt ? `<li><strong>Arr Flt:</strong> ${arrFlt}</li>` : ''}
+                        ${sta ? `<li><strong>STA:</strong> ${sta}</li>` : ''}
+                        ${depFlt ? `<li><strong>Dep Flt:</strong> ${depFlt}</li>` : ''}
+                        ${std ? `<li><strong>STD:</strong> ${std}</li>` : ''}
+                        ${route ? `<li><strong>Route:</strong> ${route}</li>` : ''}
+                        ${frequency ? `<li><strong>Frequency:</strong> ${frequency}</li>` : ''}
+                        ${day ? `<li><strong>Day:</strong> ${day}</li>` : ''}
+                        ${requiredTeams !== '' && requiredTeams !== undefined ? `<li><strong>Required Number of Teams:</strong> ${requiredTeams}</li>` : ''}
+                        ${precisionTime ? `<li><strong>Precision Time:</strong> ${precisionTime} minutes</li>` : ''}
+                    </ul>
                     ${precisionTime > 0 ? `
                         <div class="timer-section">
                             <div class="timer-display" id="timer-${index}">Ready to start</div>
@@ -617,7 +592,7 @@ const FLIGHT_DATA = [
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            document.querySelectorAll('.flight-card').forEach((c, idx) => {
+            document.querySelectorAll('.flight-item').forEach((c, idx) => {
                 c.style.display = idx === flightIndex ? 'block' : 'none';
             });
             
@@ -666,7 +641,7 @@ const FLIGHT_DATA = [
             const startBtn = document.getElementById(`start-btn-${flightIndex}`);
             const stopBtn = document.getElementById(`stop-btn-${flightIndex}`);
             
-            document.querySelectorAll('.flight-card').forEach(c => c.style.display = 'block');
+            document.querySelectorAll('.flight-item').forEach(c => c.style.display = 'block');
             card.classList.remove('timer-active', 'timer-warning');
             timerDisplay.classList.remove('warning');
             timerDisplay.textContent = 'Ready to start';
